@@ -125,17 +125,47 @@ def _load_model_internal() -> modellib.MaskRCNN:
         )
     except Exception as e:
         logger.debug(f"Some optimizer options not available: {e}")
-
+    
     model_path = pystow.join("DECIMER-Segmentation_model")
-    print(model_path)
-    if not os.path.exists(str(model_path) + "/" + MODEL_FILENAME):
+    print(model_path, flush=True)
+    
+    weights_path = os.path.join(model_path, MODEL_FILENAME)
+    
+    if not os.path.exists(weights_path):
         logger.info("Downloading model weights...")
         download_trained_weights(MODEL_DOWNLOAD_URL, str(model_path))
-        logger.info("Successfully downloaded the segmentation model weights!")
-
-    model = modellib.MaskRCNN(mode="inference", model_dir=".", config=_inference_config)
-    model.load_weights(os.path.join(model_path, MODEL_FILENAME), by_name=True)
-
+        logger.info(
+            "Successfully downloaded the segmentation model weights!"
+        )
+    
+    print(
+        f"=== DECIMER WEIGHTS FILE READY: {weights_path} ===",
+        flush=True
+    )
+    print(
+        f"=== DECIMER WEIGHTS FILE SIZE: "
+        f"{os.path.getsize(weights_path)} bytes ===",
+        flush=True
+    )
+    
+    print("=== DECIMER MODEL CREATE START ===", flush=True)
+    
+    model = modellib.MaskRCNN(
+        mode="inference",
+        model_dir=".",
+        config=_inference_config
+    )
+    
+    print("=== DECIMER MODEL CREATE SUCCESS ===", flush=True)
+    print("=== DECIMER LOAD WEIGHTS START ===", flush=True)
+    
+    model.load_weights(
+        weights_path,
+        by_name=True
+    )
+    
+    print("=== DECIMER LOAD WEIGHTS SUCCESS ===", flush=True)
+    
     return model
 
 
