@@ -31,7 +31,7 @@ setuptools.setup(
         "numpy>=1.2.0",
         "scikit-image>=0.2.0",
         "pillow",
-        "opencv-python",
+        "opencv-python-headless==4.11.0.86",
         "matplotlib",
         "IPython",
         "PyMuPDF",
