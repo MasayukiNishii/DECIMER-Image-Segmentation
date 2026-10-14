@@ -16,6 +16,7 @@ Performance Optimizations Applied:
 from __future__ import annotations
 
 import os
+import psutil
 
 # =============================================================================
 # PERFORMANCE: Set environment variables BEFORE importing TensorFlow
@@ -155,8 +156,65 @@ def _load_model_internal() -> modellib.MaskRCNN:
         model_dir=".",
         config=_inference_config
     )
+        
     
     print("=== DECIMER MODEL CREATE SUCCESS ===", flush=True)
+    
+    # --------------------------------------------------
+    # Memory diagnostics before load_weights()
+    # --------------------------------------------------
+    
+    process = psutil.Process(os.getpid())
+    
+    rss_mb = process.memory_info().rss / 1024 / 1024
+    
+    print(
+        f"=== MEMORY RSS BEFORE LOAD_WEIGHTS: {rss_mb:.1f} MB ===",
+        flush=True
+    )
+    
+    # cgroup v2: current memory usage
+    try:
+        with open("/sys/fs/cgroup/memory.current", "r") as f:
+            current_bytes = int(f.read().strip())
+    
+        print(
+            f"=== CGROUP MEMORY CURRENT: "
+            f"{current_bytes / 1024 / 1024:.1f} MB ===",
+            flush=True
+        )
+    except Exception as e:
+        print(
+            f"=== CGROUP MEMORY CURRENT UNAVAILABLE: {e} ===",
+            flush=True
+        )
+    
+    # cgroup v2: memory limit
+    try:
+        with open("/sys/fs/cgroup/memory.max", "r") as f:
+            limit_raw = f.read().strip()
+    
+        if limit_raw == "max":
+            print(
+                "=== CGROUP MEMORY LIMIT: unlimited ===",
+                flush=True
+            )
+        else:
+            limit_bytes = int(limit_raw)
+    
+            print(
+                f"=== CGROUP MEMORY LIMIT: "
+                f"{limit_bytes / 1024 / 1024:.1f} MB ===",
+                flush=True
+            )
+    
+    except Exception as e:
+        print(
+            f"=== CGROUP MEMORY LIMIT UNAVAILABLE: {e} ===",
+            flush=True
+        )
+    
+    
     print("=== DECIMER LOAD WEIGHTS START ===", flush=True)
     
     model.load_weights(
@@ -165,6 +223,15 @@ def _load_model_internal() -> modellib.MaskRCNN:
     )
     
     print("=== DECIMER LOAD WEIGHTS SUCCESS ===", flush=True)
+    
+    # Memory diagnostics after load_weights()
+    rss_after_mb = process.memory_info().rss / 1024 / 1024
+    
+    print(
+        f"=== MEMORY RSS AFTER LOAD_WEIGHTS: "
+        f"{rss_after_mb:.1f} MB ===",
+        flush=True
+    )
     
     return model
 
